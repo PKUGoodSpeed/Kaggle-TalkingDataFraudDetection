@@ -72,7 +72,7 @@ def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objec
     print("bst1.best_iteration: ", bst1.best_iteration)
     print(metrics+":", evals_results['valid'][metrics][bst1.best_iteration-1])
 
-    return (bst1,bst1.best_iteration)
+    return (bst1, bst1.best_iteration)
 
 def DO(frm, to):
     dtypes = {
@@ -284,7 +284,7 @@ def DO(frm, to):
         'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
         'scale_pos_weight':200 # because training data is extremely unbalanced 
     }
-    (bst,best_iteration) = lgb_modelfit_nocv(params, 
+    (bst, best_iteration) = lgb_modelfit_nocv(params, 
                             train_df, 
                             cv_df, 
                             predictors, 

@@ -64,7 +64,7 @@ def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objec
     print("n_estimators : ", n_estimators)
     print(metrics+":", evals_results['valid'][metrics][n_estimators-1])
 
-    return bst1
+    return bst1, bst1.best_iteration
 
 print('loading train data...')
 train_df = pd.read_csv(Train_fname, Train_kargs)
@@ -145,7 +145,7 @@ params = {
     'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
     'scale_pos_weight':99 # because training data is extremely unbalanced 
 }
-bst = lgb_modelfit_nocv(params, 
+bst, best_iteration = lgb_modelfit_nocv(params, 
                         train_df, 
                         cv_df, 
                         predictors, 
@@ -161,16 +161,18 @@ del train_df
 def cv_df
 gc.collect()
 
+output_dir = "../LGBM1"
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
 print("Predicting...")
-test_df['pred'] = bst.predict(test_df[predictors])
+test_df['pred'] = bst.predict(test_df[predictors], num_iteration=best_iteration)
 print("writing...")
-test_df.to_csv('test_pred.csv',index=False)
+test_df.to_csv(output_dir + '/test_pred.csv',index=False)
 print("done...")
-print(test_df.info())
 
 print("Making OOF ...")
-valid_df['pred'] = bst.predict(test_df[predictors])
+valid_df['pred'] = bst.predict(valid_df[predictors], num_iteration=best_iteration)
 print("writing...")
-valid_df.to_csv('test_pred.csv',index=False)
+valid_df.to_csv(output_dir + '/oof_pred.csv',index=False)
 print("done...")
-print(valid_df.info())
