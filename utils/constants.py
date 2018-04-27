@@ -37,6 +37,7 @@ N_train = To - From
 Data_path = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input"
 Train_fname = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/train.csv"
 Test_fname = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/test.csv"
+Test_ml_fname = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/test_ml.csv"
 
 Chunk_raw_files = [
     "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_1_raw.csv",

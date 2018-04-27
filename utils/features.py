@@ -3,7 +3,7 @@ Copy from https://www.kaggle.com/bk0000/non-blending-lightgbm-model-lb-0-977
 '''
 
 import os
-import io
+import time
 import gc
 import numpy as np
 import pandas as pd
@@ -59,7 +59,7 @@ def getExtendedFeatures(df):
             df = df.merge(gp, on=selcols[0:len(selcols)-1], how='left')
         if QQ==5:
             gp = df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].cumcount()
-                df['X'+str(i)]=gp.values
+            df['X'+str(i)]=gp.values
         del gp
         gc.collect()
 
@@ -159,4 +159,19 @@ def getExtendedFeatures(df):
     return df
     
 if __name__ == "__main__":
-    
+    for ffrom, fto in zip(Chunk_raw_files, Chunk_ml_files):
+        t_start = time.time()
+        print("Extracting extra features for ML ... ")
+        df = pd.read_csv(ffrom, **Train_kargs)
+        df = getExtendedFeatures(df)
+        print("Saving processed training chunk in " + fto)
+        df.to_csv(fto, index=False)
+        print("Time Usage for processing training chunk is " + str(time.time() - t_start) + " sec.")
+
+    t_start = time.time()
+    print("Extracting extra features for ML for testing set ...")
+    df = pd.read_csv(Test_fname, **Train_kargs)
+    df = getExtendedFeatures(df)
+    print("Saving processed testng data in " + Test_ml_fname)
+    df.to_csv(Test_ml_fname, index=False)
+    print("Time Usage for processing testing data is " + str(time.time() - t_start) + " sec.")
