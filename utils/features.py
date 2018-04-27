@@ -160,6 +160,7 @@ def getExtendedFeatures(df):
     
 if __name__ == "__main__":
     for ffrom, fto in zip(Chunk_raw_files, Chunk_ml_files):
+        continue
         t_start = time.time()
         print("Extracting extra features for ML ... ")
         df = pd.read_csv(ffrom, **Train_kargs)
@@ -170,7 +171,7 @@ if __name__ == "__main__":
 
     t_start = time.time()
     print("Extracting extra features for ML for testing set ...")
-    df = pd.read_csv(Test_fname, **Train_kargs)
+    df = pd.read_csv(Test_fname, **Test_kargs)
     df = getExtendedFeatures(df)
     print("Saving processed testng data in " + Test_ml_fname)
     df.to_csv(Test_ml_fname, index=False)

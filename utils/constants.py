@@ -37,22 +37,22 @@ N_train = To - From
 Data_path = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input"
 Train_fname = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/train.csv"
 Test_fname = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/test.csv"
-Test_ml_fname = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/test_ml.csv"
 
-Chunk_raw_files = [
-    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_1_raw.csv",
-    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_2_raw.csv",
-    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_3_raw.csv",
-    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_4_raw.csv"
-]
-
-Chunk_ml_files = [
-    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_1_ml.csv",
-    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_2_ml.csv",
-    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_3_ml.csv",
-    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_4_ml.csv"
+Chunk_files = [
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_1.csv",
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_2.csv",
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_3.csv",
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_4.csv",
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_5.csv",
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/valid_oof.csv"
 ]
 
 
 Target = 'is_attributed'
+
+Predictors = ['nextClick', 'nextClick_shift', 'app', 'device', 'os', 
+'channel', 'hour', 'day', 'ip_tcount', 'ip_tchan_count', 'ip_app_count', 
+'ip_app_os_count', 'ip_app_os_var', 'ip_app_channel_var_day', 'ip_app_channel_mean_hour', 
+'X0', 'X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8']
+
 Categorical = ['app', 'device', 'os', 'channel', 'hour', 'day']

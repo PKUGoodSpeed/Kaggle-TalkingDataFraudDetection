@@ -17,7 +17,7 @@ def separate():
     print(df.shape)
     print(df.columns)
     length = len(df)
-    n_chunk = 4
+    n_chunk = 6
     chunk_size = int(length/n_chunk)
     np.random.seed(17)
     perm = np.random.permutation(np.arange(0, length))
@@ -39,7 +39,7 @@ def separate():
     gc.collect()
 
     print("Saving ...")
-    for chunk_df, fname in zip(dfs, Chunk_raw_files):
+    for chunk_df, fname in zip(dfs, Chunk_files):
         print("Saving file to " + fname)
         chunk_df.to_csv(fname, index=False)
 
