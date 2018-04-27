@@ -190,9 +190,12 @@ def getExtendedFeatures(feature_path='../features'):
     test_df = train_df[N_train: ]
     train_df = train_df[: N_train]
     train_df, valid_df = train_test_split(train_df, **Split_kargs)
+    train_df, cv_df = train_test_split(train_df, test_size=0.1)
 
     print("train size:")
     print(train_df.shape)
+    print("cv size:")
+    print(cv_df.shape)
     print("valid size:")
     print(valid_df.shape)
     print("test size:")
@@ -200,10 +203,12 @@ def getExtendedFeatures(feature_path='../features'):
 
     gc.collect()
 
-    return train_df, valid_df, test_df
+    return train_df, cv_df, valid_df, test_df, predictors
     
 if __name__ == "__main__":
-    train, valid, test = getExtendedFeatures()
+    train, cv, valid, test, predictors = getExtendedFeatures()
     print train[:2]
+    print cv[:2]
     print valid[:2]
     print test[:2]
+    print predictors 

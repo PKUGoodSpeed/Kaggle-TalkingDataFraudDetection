@@ -67,10 +67,10 @@ def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objec
     return bst1, bst1.best_iteration
 
 print('loading train data...')
-train_df = pd.read_csv(Train_fname, Train_kargs)
+train_df = pd.read_csv(Train_fname, **Train_kargs)
 
 print('loading test data...')
-test_df = pd.read_csv(Test_fname, Test_kargs)
+test_df = pd.read_csv(Test_fname, **Test_kargs)
 
 assert len(train_df) == N_train, "The length of the training set does not correct!"
 train_df = train_df.append(test_df)
@@ -158,7 +158,7 @@ bst, best_iteration = lgb_modelfit_nocv(params,
                         categorical_features=categorical)
 
 del train_df
-def cv_df
+del cv_df
 gc.collect()
 
 output_dir = "../LGBM1"

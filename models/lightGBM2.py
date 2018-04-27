@@ -75,21 +75,12 @@ def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objec
     return (bst1, bst1.best_iteration)
 
 def DO(frm, to):
-    dtypes = {
-            'ip'            : 'uint32',
-            'app'           : 'uint16',
-            'device'        : 'uint16',
-            'os'            : 'uint16',
-            'channel'       : 'uint16',
-            'is_attributed' : 'uint8',
-            'click_id'      : 'uint32',
-            }
-
+    
     print('loading train data...',frm,to)
-    train_df = pd.read_csv(Train_fname, Train_kargs)
+    train_df = pd.read_csv(Train_fname, **Train_kargs)
 
     print('loading test data...')
-    test_df = pd.read_csv(Test_fname, Test_kargs)
+    test_df = pd.read_csv(Test_fname, **Test_kargs)
 
     assert len(train_df) == N_train, "The length of the training set does not correct!"
     train_df = train_df.append(test_df)
@@ -306,14 +297,14 @@ def DO(frm, to):
         os.makedirs(output_dir)
 
     print("Predicting ...")
-    test_df['is_attributed'] = bst.predict(test_df[predictors], num_iteration=best_iteration)
+    test_df['pred'] = bst.predict(test_df[predictors], num_iteration=best_iteration)
     print("writing ...")
     
     test_df.to_csv(output_dir + '/test_pred.csv', index=False)
     print("done...")
     
     print("Making oof ...")
-    valid_df['is_attributed'] = bst.predict(valid_df[predictors], num_iteration=best_iteration)
+    valid_df['pred'] = bst.predict(valid_df[predictors], num_iteration=best_iteration)
     print("writing ...")
     
     valid_df.to_csv(output_dir + '/oof_pred.csv', index=False)
