@@ -17,8 +17,6 @@ Dtype = {
 
 Train_kargs = {
     "parse_dates": ['click_time'],
-    "skiprows": range(1, From), 
-    "nrows": To-From,
     "dtype": Dtype, 
     "usecols": ['ip','app','device','os', 'channel', 'click_time', 'is_attributed']
 }

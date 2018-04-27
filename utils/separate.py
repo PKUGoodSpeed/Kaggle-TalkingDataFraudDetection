@@ -12,7 +12,7 @@ from constants import *
 def separate():
     t_start = time.time()
     print("Loading training data ...")
-    df = pd.read_csv(Train_fname, **Test_kargs)
+    df = pd.read_csv(Train_fname, **Train_kargs)
     print(df.columns)
     length = len(df)
     chunk_size = int(length/4)
