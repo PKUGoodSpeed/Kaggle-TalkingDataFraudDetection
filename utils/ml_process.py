@@ -8,37 +8,23 @@ import gc
 import numpy as np
 import pandas as pd
 from sklearn.cross_validation import train_test_split
+from constants import *
 
-VALID_RATIO = 0.1
-RANDOM_STATE = 17
-FROM = 0
-TO = 1000
 
-def getExtendedFeatures(train_file, test_file, feature_path='../features'):
+def getExtendedFeatures(feature_path='../features'):
     '''
     Getting extended features
     '''
     if not os.path.exists(feature_path):
         os.makedirs(feature_path)
-    dtypes = {
-        'ip'            : 'uint32',
-        'app'           : 'uint16',
-        'device'        : 'uint16',
-        'os'            : 'uint16',
-        'channel'       : 'uint16',
-        'is_attributed' : 'uint8',
-        'click_id'      : 'uint32',
-    }
 
     print('loading train data...')
-    train_df = pd.read_csv(train_file, parse_dates=['click_time'], skiprows=range(1,FROM), nrows=TO-FROM, dtype=dtypes, 
-    usecols=['ip','app','device','os', 'channel', 'click_time', 'is_attributed'])
+    train_df = pd.read_csv(Train_fname, **Train_kargs)
 
     print('loading test data...')
-    test_df = pd.read_csv(test_file, parse_dates=['click_time'], dtype=dtypes, 
-    usecols=['ip','app','device','os', 'channel', 'click_time', 'click_id'])
+    test_df = pd.read_csv("../input/test.csv", **Test_kargs)
     
-    N_train = len(train_df)
+    assert len(train_df) == N_train, "The length of the training set does not correct!"
     train_df = train_df.append(test_df)
 
     del test_df
@@ -65,7 +51,7 @@ def getExtendedFeatures(train_file, test_file, feature_path='../features'):
         if i==8: selcols=['ip', 'device', 'os', 'app']; QQ=4;
         print('selcols',selcols,'QQ',QQ)
         
-        filename = feature_path + '/' + 'X%d_%d_%d.csv'%(i, FROM, TO)
+        filename = feature_path + '/' + 'X%d_%d_%d.csv'%(i, From, To)
         
         if os.path.exists(filename):
             if QQ==5: 
@@ -108,7 +94,7 @@ def getExtendedFeatures(train_file, test_file, feature_path='../features'):
     predictors=[]
 
     new_feature = 'nextClick'
-    filename = feature_path + '/' + 'nextClick_%d_%d.csv'%(FROM, TO)
+    filename = feature_path + '/' + 'nextClick_%d_%d.csv'%(From, To)
 
     if os.path.exists(filename):
         print('loading from save file')
@@ -203,7 +189,7 @@ def getExtendedFeatures(train_file, test_file, feature_path='../features'):
 
     test_df = train_df[N_train: ]
     train_df = train_df[: N_train]
-    train_df, valid_df = train_test_split(train_df, test_size=VALID_RATIO, random_state=RANDOM_STATE)
+    train_df, valid_df = train_test_split(train_df, **Split_kargs)
 
     print("train size:")
     print(train_df.shape)
@@ -217,9 +203,7 @@ def getExtendedFeatures(train_file, test_file, feature_path='../features'):
     return train_df, valid_df, test_df
     
 if __name__ == "__main__":
-    train_file = '/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/mnt/ssd/kaggle-talkingdata2/competition_files/train.csv'
-    test_file = '/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/test.csv'
-    train, valid, test = getExtendedFeatures(train_file, test_file)
+    train, valid, test = getExtendedFeatures()
     print train[:2]
     print valid[:2]
     print test[:2]

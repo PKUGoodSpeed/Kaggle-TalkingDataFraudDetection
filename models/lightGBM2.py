@@ -9,12 +9,14 @@ import numpy as np
 from sklearn.cross_validation import train_test_split
 import lightgbm as lgb
 import gc
-import matplotlib.pyplot as plt
 import os
+import sys
+sys.path.append('../utils')
+from constants import *
 
-debug=1 
-if debug:
-    print('*** debug parameter set: this is a test run for debugging purposes ***')
+feature_path = '../features'
+if not os.path.exists(feature_path):
+    os.makedirs(feature_path)
 
 def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objective='binary', metrics='auc',
                  feval=None, early_stopping_rounds=20, num_boost_round=3000, verbose_eval=10, categorical_features=None):
@@ -72,7 +74,7 @@ def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objec
 
     return (bst1,bst1.best_iteration)
 
-def DO(frm,to,fileno):
+def DO(frm, to):
     dtypes = {
             'ip'            : 'uint32',
             'app'           : 'uint16',
@@ -84,16 +86,13 @@ def DO(frm,to,fileno):
             }
 
     print('loading train data...',frm,to)
-    train_df = pd.read_csv("../input/train.csv", parse_dates=['click_time'], skiprows=range(1,frm), nrows=to-frm, dtype=dtypes, usecols=['ip','app','device','os', 'channel', 'click_time', 'is_attributed'])
+    train_df = pd.read_csv(Train_fname, Train_kargs)
 
     print('loading test data...')
-    if debug:
-        test_df = pd.read_csv("../input/test.csv", nrows=100000, parse_dates=['click_time'], dtype=dtypes, usecols=['ip','app','device','os', 'channel', 'click_time', 'click_id'])
-    else:
-        test_df = pd.read_csv("../input/test.csv", parse_dates=['click_time'], dtype=dtypes, usecols=['ip','app','device','os', 'channel', 'click_time', 'click_id'])
+    test_df = pd.read_csv(Test_fname, Test_kargs)
 
-    len_train = len(train_df)
-    train_df=train_df.append(test_df)
+    assert len(train_df) == N_train, "The length of the training set does not correct!"
+    train_df = train_df.append(test_df)
 
     del test_df
     gc.collect()
@@ -117,7 +116,7 @@ def DO(frm,to,fileno):
         if i==8: selcols=['ip', 'device', 'os', 'app']; QQ=4;
         print('selcols',selcols,'QQ',QQ)
         
-        filename='X%d_%d_%d.csv'%(i,frm,to)
+        filename=feature_path + '/X%d_%d_%d.csv'%(i, frm, to)
         
         if os.path.exists(filename):
             if QQ==5: 
@@ -151,8 +150,7 @@ def DO(frm,to,fileno):
                 gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].cumcount()
                 train_df['X'+str(i)]=gp.values
             
-            if not debug:
-                 gp.to_csv(filename,index=False)
+            gp.to_csv(filename,index=False)
             
         del gp
         gc.collect()    
@@ -161,7 +159,7 @@ def DO(frm,to,fileno):
     predictors=[]
     
     new_feature = 'nextClick'
-    filename='nextClick_%d_%d.csv'%(frm,to)
+    filename = feature_path + '/nextClick_%d_%d.csv'%(frm,to)
 
     if os.path.exists(filename):
         print('loading from save file')
@@ -180,9 +178,9 @@ def DO(frm,to,fileno):
         del(click_buffer)
         QQ= list(reversed(next_clicks))
 
-        if not debug:
-            print('saving')
-            pd.DataFrame(QQ).to_csv(filename,index=False)
+        
+        print('saving')
+        pd.DataFrame(QQ).to_csv(filename,index=False)
 
     train_df[new_feature] = QQ
     predictors.append(new_feature)
@@ -254,16 +252,19 @@ def DO(frm,to,fileno):
         
     print('predictors',predictors)
 
-    test_df = train_df[len_train:]
-    val_df = train_df[(len_train-val_size):len_train]
-    train_df = train_df[:(len_train-val_size)]
+    test_df = train_df[N_train: ]
+    train_df = train_df[: N_train]
+    train_df, valid_df = train_test_split(train_df, **Split_kargs)
+    train_df, cv_df = train_test_split(train_df, test_size=0.1)
 
-    print("train size: ", len(train_df))
-    print("valid size: ", len(val_df))
-    print("test size : ", len(test_df))
-
-    sub = pd.DataFrame()
-    sub['click_id'] = test_df['click_id'].astype('int')
+    print("train size:")
+    print(train_df.shape)
+    print("cv size:")
+    print(cv_df.shape)
+    print("valid size:")
+    print(valid_df.shape)
+    print("test size:")
+    print(test_df.shape)
 
     gc.collect()
 
@@ -285,7 +286,7 @@ def DO(frm,to,fileno):
     }
     (bst,best_iteration) = lgb_modelfit_nocv(params, 
                             train_df, 
-                            val_df, 
+                            cv_df, 
                             predictors, 
                             target, 
                             objective='binary', 
@@ -297,31 +298,25 @@ def DO(frm,to,fileno):
 
     print('[{}]: model training time'.format(time.time() - start_time))
     del train_df
-    del val_df
+    del cv_df
     gc.collect()
     
-    print('Plot feature importances...')
-    ax = lgb.plot_importance(bst, max_num_features=100)
-    plt.show()
+    output_dir = "../LGBM2"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-    print("Predicting...")
-    sub['is_attributed'] = bst.predict(test_df[predictors],num_iteration=best_iteration)
-    if not debug:
-        print("writing...")
-        sub.to_csv('sub_it%d.csv.gz'%(fileno),index=False,compression='gzip')
+    print("Predicting ...")
+    test_df['is_attributed'] = bst.predict(test_df[predictors], num_iteration=best_iteration)
+    print("writing ...")
+    
+    test_df.to_csv(output_dir + '/test_pred.csv', index=False)
     print("done...")
-    return sub
+    
+    print("Making oof ...")
+    valid_df['is_attributed'] = bst.predict(valid_df[predictors], num_iteration=best_iteration)
+    print("writing ...")
+    
+    valid_df.to_csv(output_dir + '/oof_pred.csv', index=False)
+    print("done...")
 
-nrows=184903891-1
-nchunk=40000000
-val_size=2500000
-
-frm=nrows-75000000
-if debug:
-    frm=0
-    nchunk=100000
-    val_size=10000
-
-to=frm+nchunk
-
-sub=DO(frm,to,0)
+DO(From, To)
