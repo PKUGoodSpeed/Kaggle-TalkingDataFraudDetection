@@ -13,10 +13,15 @@ def separate():
     t_start = time.time()
     print("Loading training data ...")
     df = pd.read_csv(Train_fname, **Train_kargs)
+    print("Shape of training data: ")
+    print(df.shape)
     print(df.columns)
     length = len(df)
     chunk_size = int(length/4)
+    np.random.seed(17)
     perm = np.random.permutation(np.arange(0, length))
+    print("Check permutation: ")
+    print(perm[: 10])
     df_1 = df.loc[perm[: chunk_size]]
     df_2 = df.loc[perm[chunk_size: 2*chunk_size]]
     df_3 = df.loc[perm[2*chunk_size: 3*chunk_size]]
