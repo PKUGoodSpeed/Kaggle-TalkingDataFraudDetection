@@ -37,3 +37,21 @@ N_train = To - From
 Data_path = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input"
 Train_fname = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/train.csv"
 Test_fname = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/test.csv"
+
+Chunk_raw_files = [
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_1_raw.csv",
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_2_raw.csv",
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_3_raw.csv",
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_4_raw.csv"
+]
+
+Chunk_ml_files = [
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_1_ml.csv",
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_2_ml.csv",
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_3_ml.csv",
+    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_4_ml.csv"
+]
+
+
+Target = 'is_attributed'
+Categorical = ['app', 'device', 'os', 'channel', 'hour', 'day']
