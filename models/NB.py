@@ -16,7 +16,7 @@ if __name__ == "__main__":
     classifier.fit(train[predictors].values, train[target].values)
 
     output_dir = '../NB'
-    if not os.exists(output_dir):
+    if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     print("Make oofs ...")
     valid['pred'] = classifier.predict_proba(valid[predictors])[:, 1]

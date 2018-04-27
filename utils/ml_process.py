@@ -187,6 +187,7 @@ def getExtendedFeatures(feature_path='../features'):
     print('predictors:')
     print(predictors)
 
+    train_df.fillna(0., inplace=True)
     test_df = train_df[N_train: ]
     train_df = train_df[: N_train]
     train_df, valid_df = train_test_split(train_df, **Split_kargs)
