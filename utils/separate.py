@@ -17,7 +17,7 @@ def separate():
     print(df.shape)
     print(df.columns)
     length = len(df)
-    n_chunk = 6
+    n_chunk = 5
     chunk_size = int(length/n_chunk)
     np.random.seed(17)
     perm = np.random.permutation(np.arange(0, length))
