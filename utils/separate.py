@@ -12,7 +12,7 @@ from constants import *
 def separate():
     t_start = time.time()
     print("Loading training data ...")
-    df = pd.read_csv(Train_fname, **Train_kargs)
+    df = pd.read_csv(Train_fname, **Test_kargs)
     print(df.columns)
     length = len(df)
     chunk_size = int(length/4)
@@ -33,7 +33,7 @@ def separate():
     df_4.head(2)
     assert len(df) == len(df_1) + len(df_2) + len(df_3) + len(df_4)
     del df
-    gc.colect()
+    gc.collect()
 
     print("Saving ...")
     print("Chunk #1 saved in " + Data_path + '/chunk_1.csv!')
@@ -45,7 +45,7 @@ def separate():
     print("Chunk #4 saved in " + Data_path + '/chunk_4.csv!')
     df_4.to_csv(Data_path + '/chunk_4.csv', index=False)
 
-    gc.colect()
+    gc.collect()
     print("Time usage for separating is " + str(time.time() - t_start) + " sec.")
 
 if __name__ == "__main__":
