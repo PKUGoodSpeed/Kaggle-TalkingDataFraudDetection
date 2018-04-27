@@ -1,10 +1,11 @@
-import pandas as pd
-import time
-import numpy as np
-from sklearn.cross_validation import train_test_split
-import lightgbm as lgb
+import os
 import gc
 import sys
+import time
+import numpy as np
+import pandas as pd
+from sklearn.cross_validation import train_test_split
+import lightgbm as lgb
 sys.path.append('../utils')
 from constants import *
 
@@ -66,113 +67,132 @@ def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objec
 
     return bst1, bst1.best_iteration
 
-print('loading train data...')
-train_df = pd.read_csv(Train_fname, **Train_kargs)
+def Shaocong(train_file, valid_file, test_file, output_dir):
+    print("Make Preparations ...")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-print('loading test data...')
-test_df = pd.read_csv(Test_fname, **Test_kargs)
+    print('loading train data ...')
+    train_df = pd.read_csv(train_file, **Train_kargs)
+    n_train = len(train_df)
 
-assert len(train_df) == N_train, "The length of the training set does not correct!"
-train_df = train_df.append(test_df)
+    print('loading validation data ...')
+    train_df = train_df.append(pd.read_csv(valid_file, **Train_kargs))
+    n_valid = len(train_df)
 
-del test_df
-gc.collect()
+    print('loading test data ...')
+    train_df = train_df.append(pd.read_csv(test_file, **Test_kargs))
+    gc.collect()
 
-print('prep time data ...')
-train_df['hour'] = pd.to_datetime(train_df.click_time).dt.hour.astype('uint8')
-train_df['day'] = pd.to_datetime(train_df.click_time).dt.day.astype('uint8')
+    print('prep time data ...')
+    train_df['hour'] = pd.to_datetime(train_df.click_time).dt.hour.astype('uint8')
+    train_df['day'] = pd.to_datetime(train_df.click_time).dt.day.astype('uint8')
+    gc.collect()
 
-gc.collect()
+    ## number of clicks for each ip-day-hour combination
+    print('group by...')
+    gp = train_df[['ip','day','hour','channel']].groupby(by=['ip','day','hour'])[['channel']].count().reset_index().rename(index=str, columns={'channel': 'qty'})
+    print('merge...')
+    train_df = train_df.merge(gp, on=['ip','day','hour'], how='left')
+    del gp
+    gc.collect()
 
-# # of clicks for each ip-day-hour combination
-print('group by...')
-gp = train_df[['ip','day','hour','channel']].groupby(by=['ip','day','hour'])[['channel']].count().reset_index().rename(index=str, columns={'channel': 'qty'})
-print('merge...')
-train_df = train_df.merge(gp, on=['ip','day','hour'], how='left')
-del gp
-gc.collect()
+    ## number of clicks for each ip-app combination
+    print('group by...')
+    gp = train_df[['ip','app', 'channel']].groupby(by=['ip', 'app'])[['channel']].count().reset_index().rename(index=str, columns={'channel': 'ip_app_count'})
+    train_df = train_df.merge(gp, on=['ip','app'], how='left')
+    del gp
+    gc.collect()
 
-# # of clicks for each ip-app combination
-print('group by...')
-gp = train_df[['ip','app', 'channel']].groupby(by=['ip', 'app'])[['channel']].count().reset_index().rename(index=str, columns={'channel': 'ip_app_count'})
-train_df = train_df.merge(gp, on=['ip','app'], how='left')
-del gp
-gc.collect()
-
-# # of clicks for each ip-app-os combination
-print('group by...')
-gp = train_df[['ip','app', 'os', 'channel']].groupby(by=['ip', 'app', 'os'])[['channel']].count().reset_index().rename(index=str, columns={'channel': 'ip_app_os_count'})
-train_df = train_df.merge(gp, on=['ip','app', 'os'], how='left')
-del gp
-gc.collect()
+    ## number of clicks for each ip-app-os combination
+    print('group by...')
+    gp = train_df[['ip','app', 'os', 'channel']].groupby(by=['ip', 'app', 'os'])[['channel']].count().reset_index().rename(index=str, columns={'channel': 'ip_app_os_count'})
+    train_df = train_df.merge(gp, on=['ip','app', 'os'], how='left')
+    del gp
+    gc.collect()
 
 
-print("vars and data type: ")
-train_df.info()
-train_df['qty'] = train_df['qty'].astype('uint16')
-train_df['ip_app_count'] = train_df['ip_app_count'].astype('uint16')
-train_df['ip_app_os_count'] = train_df['ip_app_os_count'].astype('uint16')
+    print("vars and data type: ")
+    train_df.info()
+    train_df['qty'] = train_df['qty'].astype('uint16')
+    train_df['ip_app_count'] = train_df['ip_app_count'].astype('uint16')
+    train_df['ip_app_os_count'] = train_df['ip_app_os_count'].astype('uint16')
 
-test_df = train_df[N_train: ]
-train_df = train_df[: N_train]
-train_df, valid_df = train_test_split(train_df, **Split_kargs)
-train_df, cv_df = train_test_split(train_df, test_size=0.1)
+    test_df = train_df[n_valid: ]
+    valid_df = train_df[n_train: n_valid]
+    train_df = train_df[: n_train]
+    train_df, cv_df = train_test_split(train_df, test_size=0.1)
 
-print("train size:")
-print(train_df.shape)
-print("cv size:")
-print(cv_df.shape)
-print("valid size:")
-print(valid_df.shape)
-print("test size:")
-print(test_df.shape)
+    print("train size:")
+    print(train_df.shape)
+    print("cv size:")
+    print(cv_df.shape)
+    print("valid size:")
+    print(valid_df.shape)
+    print("test size:")
+    print(test_df.shape)
 
-target = 'is_attributed'
-predictors = ['app','device','os', 'channel', 'hour', 'day', 'qty', 'ip_app_count', 'ip_app_os_count']
-categorical = ['app','device','os', 'channel', 'hour']
+    target = 'is_attributed'
+    predictors = ['app','device','os', 'channel', 'hour', 'day', 'qty', 'ip_app_count', 'ip_app_os_count']
+    categorical = ['app','device','os', 'channel', 'hour']
 
-print("Training...")
-params = {
-    'learning_rate': 0.1,
-    #'is_unbalance': 'true', # replaced with scale_pos_weight argument
-    'num_leaves': 7,  # we should let it be smaller than 2^(max_depth)
-    'max_depth': 3,  # -1 means no limit
-    'min_child_samples': 100,  # Minimum number of data need in a child(min_data_in_leaf)
-    'max_bin': 100,  # Number of bucketed bin for feature values
-    'subsample': 0.7,  # Subsample ratio of the training instance.
-    'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
-    'colsample_bytree': 0.7,  # Subsample ratio of columns when constructing each tree.
-    'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
-    'scale_pos_weight':99 # because training data is extremely unbalanced 
-}
-bst, best_iteration = lgb_modelfit_nocv(params, 
-                        train_df, 
-                        cv_df, 
-                        predictors, 
-                        target, 
-                        objective='binary', 
-                        metrics='auc',
-                        early_stopping_rounds=50, 
-                        verbose_eval=True, 
-                        num_boost_round=300, 
-                        categorical_features=categorical)
+    print("Training...")
+    params = {
+        'learning_rate': 0.1,
+        #'is_unbalance': 'true', # replaced with scale_pos_weight argument
+        'num_leaves': 7,  # we should let it be smaller than 2^(max_depth)
+        'max_depth': 3,  # -1 means no limit
+        'min_child_samples': 100,  # Minimum number of data need in a child(min_data_in_leaf)
+        'max_bin': 100,  # Number of bucketed bin for feature values
+        'subsample': 0.7,  # Subsample ratio of the training instance.
+        'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
+        'colsample_bytree': 0.7,  # Subsample ratio of columns when constructing each tree.
+        'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
+        'scale_pos_weight':99 # because training data is extremely unbalanced 
+    }
+    bst, best_iteration = lgb_modelfit_nocv(params, 
+                            train_df, 
+                            cv_df, 
+                            predictors, 
+                            target, 
+                            objective='binary', 
+                            metrics='auc',
+                            early_stopping_rounds=50, 
+                            verbose_eval=True, 
+                            num_boost_round=300, 
+                            categorical_features=categorical)
 
-del train_df
-del cv_df
-gc.collect()
+    del train_df
+    del cv_df
+    gc.collect()
 
-output_dir = "../LGBM1"
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
+    print("Predicting...")
+    test_df['pred'] = bst.predict(test_df[predictors], num_iteration=best_iteration)
+    test_df = test_df[['click_id', 'pred']]
+    print("writing...")
+    test_df.to_csv(output_dir + '/test_pred.csv',index=False)
+    print("done...")
+    
+    print("Making OOF ...")
+    valid_df['pred'] = bst.predict(valid_df[predictors], num_iteration=best_iteration)
+    valid_df = valid_df[['is_attributed', 'pred']]
+    print("writing...")
+    valid_df.to_csv(output_dir + '/oof_pred.csv',index=False)
+    print("done...")
 
-print("Predicting...")
-test_df['pred'] = bst.predict(test_df[predictors], num_iteration=best_iteration)
-print("writing...")
-test_df.to_csv(output_dir + '/test_pred.csv',index=False)
-print("done...")
 
-print("Making OOF ...")
-valid_df['pred'] = bst.predict(valid_df[predictors], num_iteration=best_iteration)
-print("writing...")
-valid_df.to_csv(output_dir + '/oof_pred.csv',index=False)
-print("done...")
+if __name__ == "__main__":
+    output_dirs = [
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_1",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_2",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_3",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_4"
+    ]
+    for i in range(4):
+        print("Start training for fold #" + str(i+1))
+        train_file = Chunk_files[i]
+        valid_file = Valid_fname
+        test_file = Test_fname
+        output_dir = output_dirs[i]
+        Shaocong(train_file, valid_file, test_file, output_dir)
+        gc.collect()

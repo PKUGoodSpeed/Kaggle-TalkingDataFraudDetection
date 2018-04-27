@@ -2,6 +2,7 @@
 sandbox*.py
 
 # Data for TensorFlow
+output/
 data/
 input/
 inception/
