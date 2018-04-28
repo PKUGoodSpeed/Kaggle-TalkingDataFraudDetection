@@ -290,9 +290,11 @@ if __name__ == "__main__":
         "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_1",
         "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_2",
         "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_3",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_4"
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_4",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_5",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_6"
     ]
-    for i in range(4):
+    for i in range(6):
         print("Start training for fold #" + str(i+1))
         train_file = Chunk_files[i]
         valid_file = Valid_fname
