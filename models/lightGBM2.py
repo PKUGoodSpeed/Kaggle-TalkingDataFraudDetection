@@ -20,7 +20,7 @@ def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objec
         'boosting_type': 'gbdt',
         'objective': objective,
         'metric':metrics,
-        'learning_rate': 0.2,
+        'learning_rate': 0.25,
         #'is_unbalance': 'true',  #because training data is unbalance (replaced with scale_pos_weight)
         'scale_pos_weight': 20,
         'num_leaves': 31,  # we should let it be smaller than 2^(max_depth)
@@ -299,6 +299,8 @@ if __name__ == "__main__":
         "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_9"
     ]
     for i in range(9):
+        if i < 3:
+            continue
         print("Start training for fold #" + str(i+1))
         train_file = Chunk_files[i]
         valid_file = Valid_fname
