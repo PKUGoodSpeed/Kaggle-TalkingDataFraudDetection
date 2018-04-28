@@ -14,10 +14,6 @@ import sys
 sys.path.append('../utils')
 from constants import *
 
-feature_path = '../features'
-if not os.path.exists(feature_path):
-    os.makedirs(feature_path)
-
 def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objective='binary', metrics='auc',
                  feval=None, early_stopping_rounds=20, num_boost_round=3000, verbose_eval=10, categorical_features=None):
     lgb_params = {
@@ -74,26 +70,29 @@ def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objec
 
     return (bst1, bst1.best_iteration)
 
-def DO(frm, to):
-    
-    print('loading train data...',frm,to)
-    train_df = pd.read_csv(Train_fname, **Train_kargs)
+def Shaocong(train_file, valid_file, test_file, output_dir):
+    print("Make Preparations ...")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-    print('loading test data...')
-    test_df = pd.read_csv(Test_fname, **Test_kargs)
+    print('loading train data ...')
+    train_df = pd.read_csv(train_file, **Train_kargs)
+    n_train = len(train_df)
 
-    assert len(train_df) == N_train, "The length of the training set does not correct!"
-    train_df = train_df.append(test_df)
+    print('loading validation data ...')
+    train_df = train_df.append(pd.read_csv(valid_file, **Train_kargs))
+    n_valid = len(train_df)
 
-    del test_df
+    print('loading test data ...')
+    train_df = train_df.append(pd.read_csv(test_file, **Test_kargs))
     gc.collect()
-    
+
     print('Extracting new features...')
     train_df['hour'] = pd.to_datetime(train_df.click_time).dt.hour.astype('uint8')
     train_df['day'] = pd.to_datetime(train_df.click_time).dt.day.astype('uint8')
-    
+
     gc.collect()
-    
+
     naddfeat=9
     for i in range(0,naddfeat):
         if i==0: selcols=['ip', 'channel']; QQ=4;
@@ -106,79 +105,57 @@ def DO(frm, to):
         if i==7: selcols=['ip', 'os']; QQ=5;
         if i==8: selcols=['ip', 'device', 'os', 'app']; QQ=4;
         print('selcols',selcols,'QQ',QQ)
-        
-        filename=feature_path + '/X%d_%d_%d.csv'%(i, frm, to)
-        
-        if os.path.exists(filename):
-            if QQ==5: 
-                gp=pd.read_csv(filename,header=None)
-                train_df['X'+str(i)]=gp
-            else: 
-                gp=pd.read_csv(filename)
-                train_df = train_df.merge(gp, on=selcols[0:len(selcols)-1], how='left')
-        else:
-            if QQ==0:
-                gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].count().reset_index().\
-                    rename(index=str, columns={selcols[len(selcols)-1]: 'X'+str(i)})
-                train_df = train_df.merge(gp, on=selcols[0:len(selcols)-1], how='left')
-            if QQ==1:
-                gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].mean().reset_index().\
-                    rename(index=str, columns={selcols[len(selcols)-1]: 'X'+str(i)})
-                train_df = train_df.merge(gp, on=selcols[0:len(selcols)-1], how='left')
-            if QQ==2:
-                gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].var().reset_index().\
-                    rename(index=str, columns={selcols[len(selcols)-1]: 'X'+str(i)})
-                train_df = train_df.merge(gp, on=selcols[0:len(selcols)-1], how='left')
-            if QQ==3:
-                gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].skew().reset_index().\
-                    rename(index=str, columns={selcols[len(selcols)-1]: 'X'+str(i)})
-                train_df = train_df.merge(gp, on=selcols[0:len(selcols)-1], how='left')
-            if QQ==4:
-                gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].nunique().reset_index().\
-                    rename(index=str, columns={selcols[len(selcols)-1]: 'X'+str(i)})
-                train_df = train_df.merge(gp, on=selcols[0:len(selcols)-1], how='left')
-            if QQ==5:
-                gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].cumcount()
-                train_df['X'+str(i)]=gp.values
-            
-            gp.to_csv(filename,index=False)
-            
+
+        if QQ==0:
+            gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].count().reset_index().\
+                rename(index=str, columns={selcols[len(selcols)-1]: 'X'+str(i)})
+            train_df = train_df.merge(gp, on=selcols[0:len(selcols)-1], how='left')
+        if QQ==1:
+            gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].mean().reset_index().\
+                rename(index=str, columns={selcols[len(selcols)-1]: 'X'+str(i)})
+            train_df = train_df.merge(gp, on=selcols[0:len(selcols)-1], how='left')
+        if QQ==2:
+            gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].var().reset_index().\
+                rename(index=str, columns={selcols[len(selcols)-1]: 'X'+str(i)})
+            train_df = train_df.merge(gp, on=selcols[0:len(selcols)-1], how='left')
+        if QQ==3:
+            gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].skew().reset_index().\
+                rename(index=str, columns={selcols[len(selcols)-1]: 'X'+str(i)})
+            train_df = train_df.merge(gp, on=selcols[0:len(selcols)-1], how='left')
+        if QQ==4:
+            gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].nunique().reset_index().\
+                rename(index=str, columns={selcols[len(selcols)-1]: 'X'+str(i)})
+            train_df = train_df.merge(gp, on=selcols[0:len(selcols)-1], how='left')
+        if QQ==5:
+            gp = train_df[selcols].groupby(by=selcols[0:len(selcols)-1])[selcols[len(selcols)-1]].cumcount()
+            train_df['X'+str(i)]=gp.values
+
         del gp
-        gc.collect()    
+        gc.collect()
 
     print('doing nextClick')
     predictors=[]
-    
+
     new_feature = 'nextClick'
-    filename = feature_path + '/nextClick_%d_%d.csv'%(frm,to)
+    D=2**26
+    train_df['category'] = (train_df['ip'].astype(str) + "_" + train_df['app'].astype(str) + "_" + train_df['device'].astype(str) \
+        + "_" + train_df['os'].astype(str)).apply(hash) % D
+    click_buffer= np.full(D, 3000000000, dtype=np.uint32)
 
-    if os.path.exists(filename):
-        print('loading from save file')
-        QQ=pd.read_csv(filename).values
-    else:
-        D=2**26
-        train_df['category'] = (train_df['ip'].astype(str) + "_" + train_df['app'].astype(str) + "_" + train_df['device'].astype(str) \
-            + "_" + train_df['os'].astype(str)).apply(hash) % D
-        click_buffer= np.full(D, 3000000000, dtype=np.uint32)
-
-        train_df['epochtime']= train_df['click_time'].astype(np.int64) // 10 ** 9
-        next_clicks= []
-        for category, t in zip(reversed(train_df['category'].values), reversed(train_df['epochtime'].values)):
-            next_clicks.append(click_buffer[category]-t)
-            click_buffer[category]= t
-        del(click_buffer)
-        QQ= list(reversed(next_clicks))
-
-        
-        print('saving')
-        pd.DataFrame(QQ).to_csv(filename,index=False)
+    train_df['epochtime']= train_df['click_time'].astype(np.int64) // 10 ** 9
+    next_clicks= []
+    for category, t in zip(reversed(train_df['category'].values), reversed(train_df['epochtime'].values)):
+        next_clicks.append(click_buffer[category]-t)
+        click_buffer[category]= t
+    del(click_buffer)
+    QQ= list(reversed(next_clicks))
 
     train_df[new_feature] = QQ
     predictors.append(new_feature)
 
     train_df[new_feature+'_shift'] = pd.DataFrame(QQ).shift(+1).values
     predictors.append(new_feature+'_shift')
-    
+
     del QQ
     gc.collect()
 
@@ -240,12 +217,12 @@ def DO(frm, to):
     categorical = ['app', 'device', 'os', 'channel', 'hour', 'day']
     for i in range(0,naddfeat):
         predictors.append('X'+str(i))
-        
+
     print('predictors',predictors)
 
-    test_df = train_df[N_train: ]
-    train_df = train_df[: N_train]
-    train_df, valid_df = train_test_split(train_df, **Split_kargs)
+    test_df = train_df[n_valid: ]
+    valid_df = train_df[n_train: n_valid]
+    train_df = train_df[: n_train]
     train_df, cv_df = train_test_split(train_df, test_size=0.1)
 
     print("train size:")
@@ -291,23 +268,35 @@ def DO(frm, to):
     del train_df
     del cv_df
     gc.collect()
-    
-    output_dir = "../LGBM2"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
 
-    print("Predicting ...")
+    print("Predicting...")
     test_df['pred'] = bst.predict(test_df[predictors], num_iteration=best_iteration)
-    print("writing ...")
-    
-    test_df.to_csv(output_dir + '/test_pred.csv', index=False)
+    test_df = test_df[['click_id', 'pred']]
+    print("writing...")
+    test_df.to_csv(output_dir + '/test_pred.csv',index=False)
     print("done...")
+    del test_df
     
-    print("Making oof ...")
+    print("Making OOF ...")
     valid_df['pred'] = bst.predict(valid_df[predictors], num_iteration=best_iteration)
-    print("writing ...")
-    
-    valid_df.to_csv(output_dir + '/oof_pred.csv', index=False)
+    valid_df = valid_df[['is_attributed', 'pred']]
+    print("writing...")
+    valid_df.to_csv(output_dir + '/oof_pred.csv',index=False)
     print("done...")
+    del valid_df
 
-DO(From, To)
+if __name__ == "__main__":
+    output_dirs = [
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_1",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_2",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_3",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_4"
+    ]
+    for i in range(4):
+        print("Start training for fold #" + str(i+1))
+        train_file = Chunk_files[i]
+        valid_file = Valid_fname
+        test_file = Test_fname
+        output_dir = output_dirs[i]
+        Shaocong(train_file, valid_file, test_file, output_dir)
+        gc.collect()

@@ -172,6 +172,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     print("writing...")
     test_df.to_csv(output_dir + '/test_pred.csv',index=False)
     print("done...")
+    del test_df
     
     print("Making OOF ...")
     valid_df['pred'] = bst.predict(valid_df[predictors], num_iteration=best_iteration)
@@ -179,6 +180,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     print("writing...")
     valid_df.to_csv(output_dir + '/oof_pred.csv',index=False)
     print("done...")
+    del valid_df
 
 
 if __name__ == "__main__":
