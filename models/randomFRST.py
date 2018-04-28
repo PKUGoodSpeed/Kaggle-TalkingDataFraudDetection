@@ -29,7 +29,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
     train_df = getExtendedFeatures(train_df)
 
-    train_df.fillna(0., inplacce=True)
+    train_df.fillna(0., inplace=True)
 
     test_df = train_df[n_valid: ]
     valid_df = train_df[n_train: n_valid]
@@ -73,9 +73,12 @@ if __name__ == "__main__":
         "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_3",
         "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_4",
         "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_5",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_6"
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_6",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_7",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_8",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_9"
     ]
-    for i in range(6):
+    for i in range(9):
         print("Start training for fold #" + str(i+1))
         train_file = Chunk_files[i]
         valid_file = Valid_fname
