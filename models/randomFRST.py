@@ -26,6 +26,8 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     print('loading test data ...')
     train_df = train_df.append(pd.read_csv(test_file, **Test_kargs))
     gc.collect()
+    print(train_df.is_attributed.tolist().count(0))
+    print(train_df.is_attributed.tolist().count(1))
 
     train_df = getExtendedFeatures(train_df)
 
@@ -44,7 +46,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
     gc.collect()
 
-    rf = RandomForestClassifier(n_estimators=17, max_depth=17, random_state=17,verbose=2, oob_score=True)
+    rf = RandomForestClassifier(n_estimators=17, max_depth=17, random_state=17,verbose=2, oob_score=True, class_weight={0:1, 1:20})
     rf.fit(train_df[Predictors], train_df[Target])
 
     del train_df
