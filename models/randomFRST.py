@@ -29,6 +29,8 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
     train_df = getExtendedFeatures(train_df)
 
+    train_df.fillna(0., inplacce=True)
+
     test_df = train_df[n_valid: ]
     valid_df = train_df[n_train: n_valid]
     train_df = train_df[: n_train]

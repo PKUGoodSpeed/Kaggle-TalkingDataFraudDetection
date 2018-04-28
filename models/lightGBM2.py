@@ -76,7 +76,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
         os.makedirs(output_dir)
 
     print('loading train data ...')
-    train_df = pd.read_csv(train_file, **Train_kargs)
+    train_df = pd.read_csv(train_file, nrows=25000000, **Train_kargs)
     n_train = len(train_df)
 
     print('loading validation data ...')
