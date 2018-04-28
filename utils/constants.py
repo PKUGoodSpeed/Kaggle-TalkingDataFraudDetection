@@ -33,7 +33,7 @@ Split_kargs = {
 }
 
 N_train = To - From
-Valid_size = 10000000
+Valid_size = 5000000
 Data_path = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input"
 Train_fname = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/train.csv"
 Test_fname = "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/test.csv"
