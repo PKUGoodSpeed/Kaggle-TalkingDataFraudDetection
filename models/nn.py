@@ -47,6 +47,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     train_df.drop("ip", axis=1, inplace=True)
     train_df.drop("click_time", axis=1, inplace=True)
     train_df.drop("channel", axis=1, inplace=True)
+    gc.collect()
     nn_predictors = ['nextClick', 'nextClick_shift', 'hour', 'day', 'month', 'year', 'ip_tcount', 
     'ip_tchan_count', 'ip_app_count', 'ip_app_os_count', 'ip_app_os_var', 'ip_app_channel_var_day', 'ip_app_channel_mean_hour', 
     'X0', 'X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8']
@@ -70,9 +71,9 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     gc.collect()
 
     inlayer = Input((len(nn_predictors), ))
-    hidden = Dropout(0.16) (Dense(64) (inlayer))
-    hidden = Dropout(0.32) (Dense(256) (hidden))
-    hidden = Dropout(0.64) (Dense(1024) (hidden))
+    hidden = Dropout(0.16) (Dense(64, activation='relu') (inlayer))
+    hidden = Dropout(0.32) (Dense(256, activation='relu') (hidden))
+    hidden = Dropout(0.64) (Dense(1024, activation='relu') (hidden))
     out_layer = Dense(1, activation='sigmoid')
     model = Model(inputs=[in_layer], outputs=[out_layer])
     model.summary()
