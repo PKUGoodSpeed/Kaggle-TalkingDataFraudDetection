@@ -12,9 +12,6 @@ from constants import *
 
 predictors=[]
 def do_next_Click(df, agg_suffix='nextClick', agg_type='float32'):
-    
-    print(f">> \nExtracting {agg_suffix} time calculation features...\n")
-    
     GROUP_BY_NEXT_CLICKS = [
         {'groupby': ['ip', 'app', 'device', 'os', 'channel']},
         {'groupby': ['ip', 'os', 'device']},
@@ -40,9 +37,6 @@ def do_next_Click(df, agg_suffix='nextClick', agg_type='float32'):
     return (df)
 
 def do_prev_Click( df,agg_suffix='prevClick', agg_type='float32'):
-
-    print(f">> \nExtracting {agg_suffix} time calculation features...\n")
-    
     GROUP_BY_NEXT_CLICKS = [
         {'groupby': ['ip', 'channel']},
         {'groupby': ['ip', 'os']}
