@@ -12,11 +12,11 @@ from features import getExtendedFeatures
 from keras.models import Model, Sequential
 from keras.optimizers import SGD, Adam
 from keras.callbacks import LearningRateScheduler, EarlyStopping, ModelCheckpoint
-from keras.layers import Dense, Dropout
+from keras.layers import Dense, Dropout, Input
 
-global_learning_rate = 0.01
-global_decaying_rate = 0.92
-epochs = 50
+global_learning_rate = 0.02
+global_decaying_rate = 0.9
+epochs = 80
 
 def Shaocong(train_file, valid_file, test_file, output_dir):
     print("Make Preparations ...")
@@ -52,8 +52,8 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     'ip_tchan_count', 'ip_app_count', 'ip_app_os_count', 'ip_app_os_var', 'ip_app_channel_var_day', 'ip_app_channel_mean_hour', 
     'X0', 'X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8']
     for tag in nn_predictors:
-        ave = df[tag].mean()
-        std = df[tag].std()
+        ave = train_df[tag].mean()
+        std = train_df[tag].std()
         std = max(std, 1.)
         train_df[tag] = train_df[tag].apply(lambda x: (x-ave)/std)
 
@@ -70,11 +70,11 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
     gc.collect()
 
-    inlayer = Input((len(nn_predictors), ))
-    hidden = Dropout(0.16) (Dense(64, activation='relu') (inlayer))
+    in_layer = Input((len(nn_predictors), ))
+    hidden = Dropout(0.16) (Dense(64, activation='relu') (in_layer))
     hidden = Dropout(0.32) (Dense(256, activation='relu') (hidden))
     hidden = Dropout(0.64) (Dense(1024, activation='relu') (hidden))
-    out_layer = Dense(1, activation='sigmoid')
+    out_layer = Dense(1, activation='sigmoid') (hidden)
     model = Model(inputs=[in_layer], outputs=[out_layer])
     model.summary()
 
@@ -88,7 +88,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
         global global_learning_rate
         global global_decay_rate
         if epoch%3 == 0:
-            global_learning_rate *= global_decay_rate
+            global_learning_rate *= global_decaying_rate
             print("CURRENT LEARNING RATE = " + str(global_learning_rate))
         return global_learning_rate
     change_lr = LearningRateScheduler(scheduler)
@@ -98,7 +98,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     checkpointer = ModelCheckpoint(filepath='./checkpoints/model.h5', verbose=1, monitor='val_acc', save_best_only=True, mode='auto')
 
     model.fit(train_df[nn_predictors].values, train_df[Target].values, epochs=epochs, verbose=1, 
-    validation_split=0.1, batch_size=128, class_weight={0:1, 1:20}, callbacks=[earlystopper, checkpointer, change_lr])
+    validation_split=0.1, batch_size=128, class_weight={0:1, 1:80}, callbacks=[earlystopper, checkpointer, change_lr])
 
     del train_df
     gc.collect()
@@ -113,7 +113,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     del test_df
 
     print("Making OOF ...")
-    valid_df['pred'] = rf.predict_proba(valid_df[nn_predictors])
+    valid_df['pred'] = model.predict(valid_df[nn_predictors].values)
     valid_df = valid_df[['is_attributed', 'pred']]
     print("writing...")
     valid_df.to_csv(output_dir + '/oof_pred.csv',index=False)
