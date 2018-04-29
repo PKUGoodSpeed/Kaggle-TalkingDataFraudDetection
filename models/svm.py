@@ -46,7 +46,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
     gc.collect()
 
-    svc = svm.SVC(kernel='linear', C=1.0, probability=True, class_weight={0:1, 1:20})
+    svc = svm.SVC(C=1.0, probability=True, class_weight={0:1, 1:80}, verbose=True, max_iter=2000)
     svc.fit(train_df[Predictors], train_df[Target])
 
     del train_df

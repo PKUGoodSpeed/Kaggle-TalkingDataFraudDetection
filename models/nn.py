@@ -14,7 +14,7 @@ from keras.optimizers import SGD, Adam
 from keras.callbacks import LearningRateScheduler, EarlyStopping, ModelCheckpoint
 from keras.layers import Dense, Dropout, Input
 
-global_learning_rate = 0.02
+global_learning_rate = 0.0003
 global_decaying_rate = 0.9
 epochs = 80
 
@@ -98,7 +98,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     checkpointer = ModelCheckpoint(filepath='./checkpoints/model.h5', verbose=1, monitor='val_acc', save_best_only=True, mode='auto')
 
     model.fit(train_df[nn_predictors].values, train_df[Target].values, epochs=epochs, verbose=1, 
-    validation_split=0.1, batch_size=128, class_weight={0:1, 1:80}, callbacks=[earlystopper, checkpointer, change_lr])
+    validation_split=0.1, batch_size=128, class_weight={0:1, 1:40}, callbacks=[earlystopper, checkpointer, change_lr])
 
     del train_df
     gc.collect()

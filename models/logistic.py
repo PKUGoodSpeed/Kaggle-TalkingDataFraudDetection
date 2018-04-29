@@ -46,7 +46,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
     gc.collect()
 
-    lg = LogisticRegression(C=1., random_state=17, class_weight={0:1, 1:80})
+    lg = LogisticRegression(C=1., random_state=17, class_weight={0:1, 1:160})
     lg.fit(train_df[Predictors], train_df[Target])
 
     del train_df
