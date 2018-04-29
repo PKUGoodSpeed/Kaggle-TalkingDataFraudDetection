@@ -139,7 +139,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
     print("Training...")
     params = {
-        'learning_rate': 0.1,
+        'learning_rate': 0.15,
         #'is_unbalance': 'true', # replaced with scale_pos_weight argument
         'num_leaves': 7,  # we should let it be smaller than 2^(max_depth)
         'max_depth': 3,  # -1 means no limit

@@ -10,15 +10,144 @@ sys.path.append('../utils')
 from constants import *
 
 
+predictors=[]
+def do_next_Click(df, agg_suffix='nextClick', agg_type='float32'):
+    
+    print(f">> \nExtracting {agg_suffix} time calculation features...\n")
+    
+    GROUP_BY_NEXT_CLICKS = [
+        {'groupby': ['ip', 'app', 'device', 'os', 'channel']},
+        {'groupby': ['ip', 'os', 'device']},
+        {'groupby': ['ip', 'os', 'device', 'app']}
+    ]
+
+    # Calculate the time to next click for each group
+    for spec in GROUP_BY_NEXT_CLICKS:
+    
+       # Name of new feature
+        new_feature = '{}_{}'.format('_'.join(spec['groupby']),agg_suffix)    
+    
+        # Unique list of features to select
+        all_features = spec['groupby'] + ['click_time']
+
+        # Run calculation
+        print(f">> Grouping by {spec['groupby']}, and saving time to {agg_suffix} in: {new_feature}")
+        df[new_feature] = (df[all_features].groupby(spec[
+            'groupby']).click_time.shift(-1) - df.click_time).dt.seconds.astype(agg_type)
+        
+        predictors.append(new_feature)
+        gc.collect()
+    return (df)
+
+def do_prev_Click( df,agg_suffix='prevClick', agg_type='float32'):
+
+    print(f">> \nExtracting {agg_suffix} time calculation features...\n")
+    
+    GROUP_BY_NEXT_CLICKS = [
+        {'groupby': ['ip', 'channel']},
+        {'groupby': ['ip', 'os']}
+    ]
+
+    # Calculate the time to next click for each group
+    for spec in GROUP_BY_NEXT_CLICKS:
+    
+       # Name of new feature
+        new_feature = '{}_{}'.format('_'.join(spec['groupby']),agg_suffix)    
+    
+        # Unique list of features to select
+        all_features = spec['groupby'] + ['click_time']
+
+        # Run calculation
+        print(f">> Grouping by {spec['groupby']}, and saving time to {agg_suffix} in: {new_feature}")
+        df[new_feature] = (df.click_time - df[all_features].groupby(spec[
+                'groupby']).click_time.shift(+1) ).dt.seconds.astype(agg_type)
+        
+        predictors.append(new_feature)
+        gc.collect()
+    return (df)    
+
+## Below a function is written to extract count feature by aggregating different cols
+def do_count( df, group_cols, agg_type='uint32', show_max=False, show_agg=True ):
+    agg_name='{}count'.format('_'.join(group_cols))  
+    if show_agg:
+        print( "\nAggregating by ", group_cols ,  '... and saved in', agg_name )
+    gp = df[group_cols][group_cols].groupby(group_cols).size().rename(agg_name).to_frame().reset_index()
+    df = df.merge(gp, on=group_cols, how='left')
+    del gp
+    if show_max:
+        print( agg_name + " max value = ", df[agg_name].max() )
+    df[agg_name] = df[agg_name].astype(agg_type)
+    predictors.append(agg_name)
+    gc.collect()
+    return( df )
+    
+##  Below a function is written to extract unique count feature from different cols
+def do_countuniq( df, group_cols, counted, agg_type='uint32', show_max=False, show_agg=True ):
+    agg_name= '{}_by_{}_countuniq'.format(('_'.join(group_cols)),(counted))  
+    if show_agg:
+        print( "\nCounting unqiue ", counted, " by ", group_cols ,  '... and saved in', agg_name )
+    gp = df[group_cols+[counted]].groupby(group_cols)[counted].nunique().reset_index().rename(columns={counted:agg_name})
+    df = df.merge(gp, on=group_cols, how='left')
+    del gp
+    if show_max:
+        print( agg_name + " max value = ", df[agg_name].max() )
+    df[agg_name] = df[agg_name].astype(agg_type)
+    predictors.append(agg_name)
+    gc.collect()
+    return( df )
+### Below a function is written to extract cumulative count feature  from different cols    
+def do_cumcount( df, group_cols, counted,agg_type='uint32', show_max=False, show_agg=True ):
+    agg_name= '{}_by_{}_cumcount'.format(('_'.join(group_cols)),(counted)) 
+    if show_agg:
+        print( "\nCumulative count by ", group_cols , '... and saved in', agg_name  )
+    gp = df[group_cols+[counted]].groupby(group_cols)[counted].cumcount()
+    df[agg_name]=gp.values
+    del gp
+    if show_max:
+        print( agg_name + " max value = ", df[agg_name].max() )
+    df[agg_name] = df[agg_name].astype(agg_type)
+    predictors.append(agg_name)
+#     print('predictors',predictors)
+    gc.collect()
+    return( df )
+### Below a function is written to extract mean feature  from different cols
+def do_mean( df, group_cols, counted, agg_type='float32', show_max=False, show_agg=True ):
+    agg_name= '{}_by_{}_mean'.format(('_'.join(group_cols)),(counted))  
+    if show_agg:
+        print( "\nCalculating mean of ", counted, " by ", group_cols , '... and saved in', agg_name )
+    gp = df[group_cols+[counted]].groupby(group_cols)[counted].mean().reset_index().rename(columns={counted:agg_name})
+    df = df.merge(gp, on=group_cols, how='left')
+    del gp
+    if show_max:
+        print( agg_name + " max value = ", df[agg_name].max() )
+    df[agg_name] = df[agg_name].astype(agg_type)
+    predictors.append(agg_name)
+#     print('predictors',predictors)
+    gc.collect()
+    return( df )
+
+def do_var( df, group_cols, counted, agg_type='float32', show_max=False, show_agg=True ):
+    agg_name= '{}_by_{}_var'.format(('_'.join(group_cols)),(counted)) 
+    if show_agg:
+        print( "\nCalculating variance of ", counted, " by ", group_cols , '... and saved in', agg_name )
+    gp = df[group_cols+[counted]].groupby(group_cols)[counted].var().reset_index().rename(columns={counted:agg_name})
+    df = df.merge(gp, on=group_cols, how='left')
+    del gp
+    if show_max:
+        print( agg_name + " max value = ", df[agg_name].max() )
+    df[agg_name] = df[agg_name].astype(agg_type)
+    predictors.append(agg_name)
+    gc.collect()
+    return( df )
+
 def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objective='binary', metrics='auc',
-                 feval=None, early_stopping_rounds=20, num_boost_round=3000, verbose_eval=10, categorical_features=None):
+                 feval=None, early_stopping_rounds=50, num_boost_round=3000, verbose_eval=10, categorical_features=None):
     lgb_params = {
         'boosting_type': 'gbdt',
         'objective': objective,
         'metric':metrics,
-        'learning_rate': 0.36,
+        'learning_rate': 0.17,
         #'is_unbalance': 'true',  #because training data is unbalance (replaced with scale_pos_weight)
-        'scale_pos_weight': 20,
         'num_leaves': 31,  # we should let it be smaller than 2^(max_depth)
         'max_depth': -1,  # -1 means no limit
         'min_child_samples': 20,  # Minimum number of data need in a child(min_data_in_leaf)
@@ -33,7 +162,6 @@ def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objec
         'reg_lambda': 0,  # L2 regularization term on weights
         'nthread': 8,
         'verbose': 0,
-        'metric':metrics
     }
 
     lgb_params.update(params)
@@ -48,25 +176,27 @@ def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objec
                           feature_name=predictors,
                           categorical_feature=categorical_features
                           )
+    del dtrain
+    del dvalid
+    gc.collect()
 
     evals_results = {}
 
     bst1 = lgb.train(lgb_params, 
                      xgtrain, 
-                     valid_sets=[xgtrain, xgvalid], 
-                     valid_names=['train','valid'], 
+                     valid_sets=[ xgvalid], 
+                     valid_names=['valid'], 
                      evals_result=evals_results, 
                      num_boost_round=num_boost_round,
                      early_stopping_rounds=early_stopping_rounds,
                      verbose_eval=10, 
                      feval=feval)
 
-    n_estimators = bst1.best_iteration
     print("\nModel Report")
-    print("n_estimators : ", n_estimators)
-    print(metrics+":", evals_results['valid'][metrics][n_estimators-1])
+    print("bst1.best_iteration: ", bst1.best_iteration)
+    print(metrics+":", evals_results['valid'][metrics][bst1.best_iteration-1])
 
-    return bst1, bst1.best_iteration
+    return (bst1,bst1.best_iteration)
 
 def Shaocong(train_file, valid_file, test_file, output_dir):
     print("Make Preparations ...")
@@ -84,40 +214,35 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     print('loading test data ...')
     train_df = train_df.append(pd.read_csv(test_file, **Test_kargs))
     gc.collect()
-
-    print('prep time data ...')
-    train_df['hour'] = pd.to_datetime(train_df.click_time).dt.hour.astype('uint8')
-    train_df['day'] = pd.to_datetime(train_df.click_time).dt.day.astype('uint8')
+    train_df['hour'] = pd.to_datetime(train_df.click_time).dt.hour.astype('int8')
+    train_df['day'] = pd.to_datetime(train_df.click_time).dt.day.astype('int8') 
+    train_df = do_next_Click( train_df,agg_suffix='nextClick', agg_type='float32'  ); gc.collect()
+    train_df = do_prev_Click( train_df,agg_suffix='prevClick', agg_type='float32'  ); gc.collect()  ## Removed temporarily due RAM sortage. 
+    
+    train_df = do_countuniq( train_df, ['ip'], 'channel' ); gc.collect()
+    train_df = do_countuniq( train_df, ['ip', 'device', 'os'], 'app'); gc.collect()
+    train_df = do_countuniq( train_df, ['ip', 'day'], 'hour' ); gc.collect()
+    train_df = do_countuniq( train_df, ['ip'], 'app'); gc.collect()
+    train_df = do_countuniq( train_df, ['ip', 'app'], 'os'); gc.collect()
+    train_df = do_countuniq( train_df, ['ip'], 'device'); gc.collect()
+    train_df = do_countuniq( train_df, ['app'], 'channel'); gc.collect()
+    train_df = do_cumcount( train_df, ['ip'], 'os'); gc.collect()
+    train_df = do_cumcount( train_df, ['ip', 'device', 'os'], 'app'); gc.collect()
+    train_df = do_count( train_df, ['ip', 'day', 'hour'] ); gc.collect()
+    train_df = do_count( train_df, ['ip', 'app']); gc.collect()
+    train_df = do_count( train_df, ['ip', 'app', 'os']); gc.collect()
+    train_df = do_var( train_df, ['ip', 'app', 'os'], 'hour'); gc.collect()
+    train_df = do_mean( train_df, ['ip', 'app', 'channel'], 'hour' ); gc.collect()
+    del train_df['day']
     gc.collect()
-
-    ## number of clicks for each ip-day-hour combination
-    print('group by...')
-    gp = train_df[['ip','day','hour','channel']].groupby(by=['ip','day','hour'])[['channel']].count().reset_index().rename(index=str, columns={'channel': 'qty'})
-    print('merge...')
-    train_df = train_df.merge(gp, on=['ip','day','hour'], how='left')
-    del gp
-    gc.collect()
-
-    ## number of clicks for each ip-app combination
-    print('group by...')
-    gp = train_df[['ip','app', 'channel']].groupby(by=['ip', 'app'])[['channel']].count().reset_index().rename(index=str, columns={'channel': 'ip_app_count'})
-    train_df = train_df.merge(gp, on=['ip','app'], how='left')
-    del gp
-    gc.collect()
-
-    ## number of clicks for each ip-app-os combination
-    print('group by...')
-    gp = train_df[['ip','app', 'os', 'channel']].groupby(by=['ip', 'app', 'os'])[['channel']].count().reset_index().rename(index=str, columns={'channel': 'ip_app_os_count'})
-    train_df = train_df.merge(gp, on=['ip','app', 'os'], how='left')
-    del gp
-    gc.collect()
-
-
-    print("vars and data type: ")
-    train_df.info()
-    train_df['qty'] = train_df['qty'].astype('uint16')
-    train_df['ip_app_count'] = train_df['ip_app_count'].astype('uint16')
-    train_df['ip_app_os_count'] = train_df['ip_app_os_count'].astype('uint16')
+    print('\n\nBefore appending predictors...\n\n',sorted(predictors))
+    target = 'is_attributed'
+    word= ['app','device','os', 'channel', 'hour']
+    for feature in word:
+        if feature not in predictors:
+            predictors.append(feature)
+    categorical = ['app', 'device', 'os', 'channel', 'hour']
+    print('\n\nAfter appending predictors...\n\n',sorted(predictors))
 
     test_df = train_df[n_valid: ]
     valid_df = train_df[n_train: n_valid]
@@ -133,36 +258,35 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     print("test size:")
     print(test_df.shape)
 
-    target = 'is_attributed'
-    predictors = ['app','device','os', 'channel', 'hour', 'day', 'qty', 'ip_app_count', 'ip_app_os_count']
-    categorical = ['app','device','os', 'channel', 'hour']
-
     print("Training...")
+    start_time = time.time()
+
     params = {
-        'learning_rate': 0.1,
+        'learning_rate': 0.15,
         #'is_unbalance': 'true', # replaced with scale_pos_weight argument
-        'num_leaves': 7,  # we should let it be smaller than 2^(max_depth)
+        'num_leaves': 7,  # 2^max_depth - 1
         'max_depth': 3,  # -1 means no limit
         'min_child_samples': 100,  # Minimum number of data need in a child(min_data_in_leaf)
         'max_bin': 100,  # Number of bucketed bin for feature values
         'subsample': 0.7,  # Subsample ratio of the training instance.
         'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
-        'colsample_bytree': 0.7,  # Subsample ratio of columns when constructing each tree.
+        'colsample_bytree': 0.9,  # Subsample ratio of columns when constructing each tree.
         'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
-        'scale_pos_weight':99 # because training data is extremely unbalanced 
+        'scale_pos_weight': 40 # because training data is extremely unbalanced 
     }
-    bst, best_iteration = lgb_modelfit_nocv(params, 
+    (bst,best_iteration) = lgb_modelfit_nocv(params, 
                             train_df, 
                             cv_df, 
                             predictors, 
                             target, 
                             objective='binary', 
                             metrics='auc',
-                            early_stopping_rounds=50, 
+                            early_stopping_rounds=30, 
                             verbose_eval=True, 
-                            num_boost_round=300, 
+                            num_boost_round=1000, 
                             categorical_features=categorical)
 
+    print('[{}]: model training time'.format(time.time() - start_time))
     del train_df
     del cv_df
     gc.collect()
@@ -174,6 +298,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     test_df.to_csv(output_dir + '/test_pred.csv',index=False)
     print("done...")
     del test_df
+    gc.collect()
     
     print("Making OOF ...")
     valid_df['pred'] = bst.predict(valid_df[predictors], num_iteration=best_iteration)
@@ -182,19 +307,20 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     valid_df.to_csv(output_dir + '/oof_pred.csv',index=False)
     print("done...")
     del valid_df
+    gc.collect()
 
 
 if __name__ == "__main__":
     output_dirs = [
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_1",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_2",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_3",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_4",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_5",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_6",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_7",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_8",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_1/fold_9"
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_3/fold_1",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_3/fold_2",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_3/fold_3",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_3/fold_4",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_3/fold_5",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_3/fold_6",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_3/fold_7",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_3/fold_8",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_3/fold_9"
     ]
     for i in range(9):
         print("Start training for fold #" + str(i+1))

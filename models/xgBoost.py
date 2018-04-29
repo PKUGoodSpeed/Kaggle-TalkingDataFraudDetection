@@ -9,7 +9,7 @@ sys.path.append('../utils')
 from constants import *
 from features import getExtendedFeatures
 
-def Shaocong(train_df, valid_df, test_df, output_dir):
+def Shaocong(train_file, valid_file, test_file, output_dir):
     print("Make Preparations ...")
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
