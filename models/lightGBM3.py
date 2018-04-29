@@ -256,7 +256,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     start_time = time.time()
 
     params = {
-        'learning_rate': 0.15,
+        'learning_rate': 0.05,
         #'is_unbalance': 'true', # replaced with scale_pos_weight argument
         'num_leaves': 7,  # 2^max_depth - 1
         'max_depth': 3,  # -1 means no limit
@@ -277,7 +277,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
                             metrics='auc',
                             early_stopping_rounds=30, 
                             verbose_eval=True, 
-                            num_boost_round=1000, 
+                            num_boost_round=2000, 
                             categorical_features=categorical)
 
     print('[{}]: model training time'.format(time.time() - start_time))

@@ -139,7 +139,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
     print("Training...")
     params = {
-        'learning_rate': 0.15,
+        'learning_rate': 0.05,
         #'is_unbalance': 'true', # replaced with scale_pos_weight argument
         'num_leaves': 7,  # we should let it be smaller than 2^(max_depth)
         'max_depth': 3,  # -1 means no limit
@@ -149,7 +149,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
         'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
         'colsample_bytree': 0.7,  # Subsample ratio of columns when constructing each tree.
         'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
-        'scale_pos_weight':99 # because training data is extremely unbalanced 
+        'scale_pos_weight': 40 # because training data is extremely unbalanced 
     }
     bst, best_iteration = lgb_modelfit_nocv(params, 
                             train_df, 
@@ -160,7 +160,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
                             metrics='auc',
                             early_stopping_rounds=50, 
                             verbose_eval=True, 
-                            num_boost_round=300, 
+                            num_boost_round=2000, 
                             categorical_features=categorical)
 
     del train_df
