@@ -1,142 +1,149 @@
-import os
-import gc
-import sys
-import time
-import numpy as np 
 import pandas as pd
-sys.path.append('../utils')
-from constants import *
-from features import getExtendedFeatures
+import numpy as np
+import warnings
+warnings.filterwarnings('ignore')
+import os
+os.environ['OMP_NUM_THREADS'] = '4'
+import gc
 
-## Using neural network
-from keras.models import Model, Sequential
-from keras.optimizers import SGD, Adam
-from keras.callbacks import LearningRateScheduler, EarlyStopping, ModelCheckpoint
-from keras.layers import Dense, Dropout, Input
+path = '../input/'
+dtypes = {
+        'ip'            : 'uint32',
+        'app'           : 'uint16',
+        'device'        : 'uint16',
+        'os'            : 'uint16',
+        'channel'       : 'uint16',
+        'is_attributed' : 'uint8',
+        'click_id'      : 'uint32'
+        }
+print('load train....')
+# we save only day 9
+train_df = pd.read_csv(path+"train.csv", dtype=dtypes, skiprows = range(1, 131886954), usecols=['ip','app','device','os', 'channel', 'click_time', 'is_attributed'])
+print('load test....')
+test_df = pd.read_csv(path+"test.csv", dtype=dtypes, usecols=['ip','app','device','os', 'channel', 'click_time', 'click_id'])
+len_train = len(train_df)
+train_df=train_df.append(test_df)
+del test_df; gc.collect()
 
-global_learning_rate = 0.0003
-global_decaying_rate = 0.9
-epochs = 80
+print('hour, day, wday....')
+train_df['hour'] = pd.to_datetime(train_df.click_time).dt.hour.astype('uint8')
+train_df['day'] = pd.to_datetime(train_df.click_time).dt.day.astype('uint8')
+train_df['wday']  = pd.to_datetime(train_df.click_time).dt.dayofweek.astype('uint8')
+print('grouping by ip-day-hour combination....')
+gp = train_df[['ip','day','hour','channel']].groupby(by=['ip','day','hour'])[['channel']].count().reset_index().rename(index=str, columns={'channel': 'qty'})
+train_df = train_df.merge(gp, on=['ip','day','hour'], how='left')
+del gp; gc.collect()
+print('group by ip-app combination....')
+gp = train_df[['ip','app', 'channel']].groupby(by=['ip', 'app'])[['channel']].count().reset_index().rename(index=str, columns={'channel': 'ip_app_count'})
+train_df = train_df.merge(gp, on=['ip','app'], how='left')
+del gp; gc.collect()
+print('group by ip-app-os combination....')
+gp = train_df[['ip','app', 'os', 'channel']].groupby(by=['ip', 'app', 'os'])[['channel']].count().reset_index().rename(index=str, columns={'channel': 'ip_app_os_count'})
+train_df = train_df.merge(gp, on=['ip','app', 'os'], how='left')
+del gp; gc.collect()
+print("vars and data type....")
+train_df['qty'] = train_df['qty'].astype('uint16')
+train_df['ip_app_count'] = train_df['ip_app_count'].astype('uint16')
+train_df['ip_app_os_count'] = train_df['ip_app_os_count'].astype('uint16')
+print("label encoding....")
+from sklearn.preprocessing import LabelEncoder
+train_df[['app','device','os', 'channel', 'hour', 'day', 'wday']].apply(LabelEncoder().fit_transform)
+print ('final part of preparation....')
+test_df = train_df[len_train:]
+train_df = train_df[:len_train]
+y_train = train_df['is_attributed'].values
+train_df.drop(['click_id', 'click_time','ip','is_attributed'],1,inplace=True)
 
-def Shaocong(train_file, valid_file, test_file, output_dir):
-    print("Make Preparations ...")
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+print ('neural network....')
+from keras.layers import Input, Embedding, Dense, Flatten, Dropout, concatenate
+from keras.layers import BatchNormalization, SpatialDropout1D, Conv1D
+from keras.callbacks import Callback
+from keras.models import Model
+from keras.optimizers import Adam
 
-    print('loading train data ...')
-    train_df = pd.read_csv(train_file, **Train_kargs)
-    n_train = len(train_df)
+max_app = np.max([train_df['app'].max(), test_df['app'].max()])+1
+max_ch = np.max([train_df['channel'].max(), test_df['channel'].max()])+1
+max_dev = np.max([train_df['device'].max(), test_df['device'].max()])+1
+max_os = np.max([train_df['os'].max(), test_df['os'].max()])+1
+max_h = np.max([train_df['hour'].max(), test_df['hour'].max()])+1
+max_d = np.max([train_df['day'].max(), test_df['day'].max()])+1
+max_wd = np.max([train_df['wday'].max(), test_df['wday'].max()])+1
+max_qty = np.max([train_df['qty'].max(), test_df['qty'].max()])+1
+max_c1 = np.max([train_df['ip_app_count'].max(), test_df['ip_app_count'].max()])+1
+max_c2 = np.max([train_df['ip_app_os_count'].max(), test_df['ip_app_os_count'].max()])+1
+def get_keras_data(dataset):
+    X = {
+        'app': np.array(dataset.app),
+        'ch': np.array(dataset.channel),
+        'dev': np.array(dataset.device),
+        'os': np.array(dataset.os),
+        'h': np.array(dataset.hour),
+        'd': np.array(dataset.day),
+        'wd': np.array(dataset.wday),
+        'qty': np.array(dataset.qty),
+        'c1': np.array(dataset.ip_app_count),
+        'c2': np.array(dataset.ip_app_os_count)
+    }
+    return X
+train_df = get_keras_data(train_df)
 
-    print('loading validation data ...')
-    train_df = train_df.append(pd.read_csv(valid_file, **Train_kargs))
-    n_valid = len(train_df)
+emb_n = 50
+dense_n = 1000
+in_app = Input(shape=[1], name = 'app')
+emb_app = Embedding(max_app, emb_n)(in_app)
+in_ch = Input(shape=[1], name = 'ch')
+emb_ch = Embedding(max_ch, emb_n)(in_ch)
+in_dev = Input(shape=[1], name = 'dev')
+emb_dev = Embedding(max_dev, emb_n)(in_dev)
+in_os = Input(shape=[1], name = 'os')
+emb_os = Embedding(max_os, emb_n)(in_os)
+in_h = Input(shape=[1], name = 'h')
+emb_h = Embedding(max_h, emb_n)(in_h) 
+in_d = Input(shape=[1], name = 'd')
+emb_d = Embedding(max_d, emb_n)(in_d) 
+in_wd = Input(shape=[1], name = 'wd')
+emb_wd = Embedding(max_wd, emb_n)(in_wd) 
+in_qty = Input(shape=[1], name = 'qty')
+emb_qty = Embedding(max_qty, emb_n)(in_qty) 
+in_c1 = Input(shape=[1], name = 'c1')
+emb_c1 = Embedding(max_c1, emb_n)(in_c1) 
+in_c2 = Input(shape=[1], name = 'c2')
+emb_c2 = Embedding(max_c2, emb_n)(in_c2) 
+fe = concatenate([(emb_app), (emb_ch), (emb_dev), (emb_os), (emb_h), 
+                 (emb_d), (emb_wd), (emb_qty), (emb_c1), (emb_c2)])
+s_dout = SpatialDropout1D(0.2)(fe)
+fl1 = Flatten()(s_dout)
+conv = Conv1D(100, kernel_size=4, strides=1, padding='same')(s_dout)
+fl2 = Flatten()(conv)
+concat = concatenate([(fl1), (fl2)])
+x = Dropout(0.2)(Dense(dense_n,activation='relu')(concat))
+x = Dropout(0.2)(Dense(dense_n,activation='relu')(x))
+outp = Dense(1,activation='sigmoid')(x)
+model = Model(inputs=[in_app,in_ch,in_dev,in_os,in_h,in_d,in_wd,in_qty,in_c1,in_c2], outputs=outp)
 
-    print('loading test data ...')
-    train_df = train_df.append(pd.read_csv(test_file, **Test_kargs))
-    gc.collect()
-    print(train_df.is_attributed.tolist().count(0))
-    print(train_df.is_attributed.tolist().count(1))
+batch_size = 50000
+epochs = 2
+exp_decay = lambda init, fin, steps: (init/fin)**(1/(steps-1)) - 1
+steps = int(len(list(train_df)[0]) / batch_size) * epochs
+lr_init, lr_fin = 0.002, 0.0002
+lr_decay = exp_decay(lr_init, lr_fin, steps)
+optimizer_adam = Adam(lr=0.002, decay=lr_decay)
+model.compile(loss='binary_crossentropy',optimizer=optimizer_adam,metrics=['accuracy'])
 
-    train_df = getExtendedFeatures(train_df)
+model.summary()
 
-    train_df.fillna(0., inplace=True)
+class_weight = {0:.01,1:.99} # magic
+model.fit(train_df, y_train, batch_size=batch_size, epochs=2, class_weight=class_weight, shuffle=True, verbose=2)
+del train_df, y_train; gc.collect()
+model.save_weights('imbalanced_data.h5')
 
-    train_df.drop("app", axis=1, inplace=True)
-    train_df.drop("device", axis=1, inplace=True)
-    train_df.drop("os", axis=1, inplace=True)
-    train_df.drop("ip", axis=1, inplace=True)
-    train_df.drop("click_time", axis=1, inplace=True)
-    train_df.drop("channel", axis=1, inplace=True)
-    gc.collect()
-    nn_predictors = ['nextClick', 'nextClick_shift', 'hour', 'day', 'month', 'year', 'ip_tcount', 
-    'ip_tchan_count', 'ip_app_count', 'ip_app_os_count', 'ip_app_os_var', 'ip_app_channel_var_day', 'ip_app_channel_mean_hour', 
-    'X0', 'X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8']
-    for tag in nn_predictors:
-        ave = train_df[tag].mean()
-        std = train_df[tag].std()
-        std = max(std, 1.)
-        train_df[tag] = train_df[tag].apply(lambda x: (x-ave)/std)
+sub = pd.DataFrame()
+sub['click_id'] = test_df['click_id'].astype('int')
+test_df.drop(['click_id', 'click_time','ip','is_attributed'],1,inplace=True)
+test_df = get_keras_data(test_df)
 
-    test_df = train_df[n_valid: ]
-    valid_df = train_df[n_train: n_valid]
-    train_df = train_df[: n_train]
-
-    print("train size:")
-    print(train_df.shape)
-    print("valid size:")
-    print(valid_df.shape)
-    print("test size:")
-    print(test_df.shape)
-
-    gc.collect()
-
-    in_layer = Input((len(nn_predictors), ))
-    hidden = Dropout(0.16) (Dense(64, activation='relu') (in_layer))
-    hidden = Dropout(0.32) (Dense(256, activation='relu') (hidden))
-    hidden = Dropout(0.64) (Dense(1024, activation='relu') (hidden))
-    out_layer = Dense(1, activation='sigmoid') (hidden)
-    model = Model(inputs=[in_layer], outputs=[out_layer])
-    model.summary()
-
-    model.compile(optimizer=Adam(global_learning_rate), loss='binary_crossentropy', metrics=['accuracy'])
-
-    global global_learning_rate
-    global global_decaying_rate
-
-    ## Using adaptive decaying learning rate
-    def scheduler(epoch):
-        global global_learning_rate
-        global global_decay_rate
-        if epoch%3 == 0:
-            global_learning_rate *= global_decaying_rate
-            print("CURRENT LEARNING RATE = " + str(global_learning_rate))
-        return global_learning_rate
-    change_lr = LearningRateScheduler(scheduler)
-    earlystopper = EarlyStopping(patience=8, verbose=1, monitor='val_acc', mode='auto')
-    if not os.path.exists('./checkpoints'):
-        os.system('mkdir checkpoints')
-    checkpointer = ModelCheckpoint(filepath='./checkpoints/model.h5', verbose=1, monitor='val_acc', save_best_only=True, mode='auto')
-
-    model.fit(train_df[nn_predictors].values, train_df[Target].values, epochs=epochs, verbose=1, 
-    validation_split=0.1, batch_size=128, class_weight={0:1, 1:40}, callbacks=[earlystopper, checkpointer, change_lr])
-
-    del train_df
-    gc.collect()
-
-    model.load_weights('./checkpoints/model.h5')
-    print("Predicting...")
-    test_df['pred'] = model.predict(test_df[nn_predictors].values)
-    test_df = test_df[['click_id', 'pred']]
-    print("writing...")
-    test_df.to_csv(output_dir + '/test_pred.csv',index=False)
-    print("done...")
-    del test_df
-
-    print("Making OOF ...")
-    valid_df['pred'] = model.predict(valid_df[nn_predictors].values)
-    valid_df = valid_df[['is_attributed', 'pred']]
-    print("writing...")
-    valid_df.to_csv(output_dir + '/oof_pred.csv',index=False)
-    print("done...")
-    del valid_df
-
-if __name__ == "__main__":
-    output_dirs = [
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_1",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_2",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_3",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_4",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_5",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_6",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_7",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_8",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_9"
-    ]
-    for i in range(9):
-        print("Start training for fold #" + str(i+1))
-        train_file = Chunk_files[i]
-        valid_file = Valid_fname
-        test_file = Test_fname
-        output_dir = output_dirs[i]
-        Shaocong(train_file, valid_file, test_file, output_dir)
-        gc.collect()
+print("predicting....")
+sub['is_attributed'] = model.predict(test_df, batch_size=batch_size, verbose=2)
+del test_df; gc.collect()
+print("writing....")
+sub.to_csv('imbalanced_data.csv',index=False)
