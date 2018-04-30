@@ -46,9 +46,6 @@ Chunk_files = [
     "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_4.csv",
     "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_5.csv",
     "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_6.csv",
-    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_7.csv",
-    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_8.csv",
-    "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/chunk_9.csv",
     "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/input/valid_oof.csv"
 ]
 

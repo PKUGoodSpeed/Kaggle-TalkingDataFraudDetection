@@ -46,7 +46,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
     gc.collect()
 
-    rf = RandomForestClassifier(n_estimators=17, max_depth=17, random_state=17,verbose=2, oob_score=True, class_weight={0:1, 1:20})
+    rf = RandomForestClassifier(n_estimators=17, max_depth=17, random_state=17,verbose=2, oob_score=True, class_weight={0:1, 1:160})
     rf.fit(train_df[Predictors], train_df[Target])
 
     del train_df
@@ -70,15 +70,15 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
 if __name__ == "__main__":
     output_dirs = [
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_1",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_2",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_3",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_4",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_5",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_6",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_7",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_8",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST/fold_9"
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST_2/fold_1",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST_2/fold_2",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST_2/fold_3",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST_2/fold_4",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST_2/fold_5",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST_2/fold_6",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST_2/fold_7",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST_2/fold_8",
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/randomFRST_2/fold_9"
     ]
     for i in range(9):
         print("Start training for fold #" + str(i+1))
