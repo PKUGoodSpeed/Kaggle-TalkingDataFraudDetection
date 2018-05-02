@@ -57,7 +57,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
               'min_child_weight':0,
               'alpha':4,
               'objective': 'binary:logistic', 
-              'scale_pos_weight':20,
+              'scale_pos_weight': 200,
               'eval_metric': 'auc', 
               'nthread':8,
               'random_state': 99, 
@@ -103,17 +103,9 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
 if __name__ == "__main__":
     output_dirs = [
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/xgBoost/fold_1",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/xgBoost/fold_2",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/xgBoost/fold_3",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/xgBoost/fold_4",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/xgBoost/fold_5",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/xgBoost/fold_6",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/xgBoost/fold_7",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/xgBoost/fold_8",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/xgBoost/fold_9"
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/xgBoost/fold_1"
     ]
-    for i in range(9):
+    for i in range(1):
         print("Start training for fold #" + str(i+1))
         train_file = Chunk_files[i]
         valid_file = Valid_fname

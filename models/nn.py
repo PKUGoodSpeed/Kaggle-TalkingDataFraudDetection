@@ -4,6 +4,7 @@ import warnings
 warnings.filterwarnings('ignore')
 import os
 import gc
+import sys
 
 ## Keras utils
 from keras.layers import Input, Embedding, Dense, Flatten, Dropout, concatenate
@@ -14,6 +15,9 @@ from keras.optimizers import Adam
 
 ## Label encoding
 from sklearn.preprocessing import LabelEncoder
+
+sys.path.append('../utils')
+from constants import *
 
 def Shaocong(train_file, valid_file, test_file, output_dir):
     print("Make Preparations ...")
@@ -134,8 +138,8 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     outp = Dense(1,activation='sigmoid')(x)
     model = Model(inputs=[in_app,in_ch,in_dev,in_os,in_h,in_d,in_wd,in_qty,in_c1,in_c2], outputs=outp)
 
-    batch_size = 256
-    epochs = 2
+    batch_size = 128
+    epochs = 3
     exp_decay = lambda init, fin, steps: (init/fin)**(1/(steps-1)) - 1
     steps = int(len(list(train_df)[0]) / batch_size) * epochs
     lr_init, lr_fin = 0.002, 0.0002
@@ -145,13 +149,14 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
     model.summary()
 
-    class_weight = {0:1., 1:160.} # magic
-    model.fit(train_df, y_train, batch_size=batch_size, epochs=2, class_weight=class_weight, shuffle=True, verbose=2)
+    class_weight = {0:1., 1:200.} # magic
+    model.fit(train_df, y_train, batch_size=batch_size, epochs=2, 
+    class_weight=class_weight, shuffle=True, verbose=1, validation_split=0.05)
     del train_df, y_train; gc.collect()
     model.save_weights('./imbalanced_data.h5')
 
     print("Predicting...")
-    test_df['pred'] = model.predict(get_keras_data(test_df), batch_size=batch_size, verbose=2)
+    test_df['pred'] = model.predict(get_keras_data(test_df), batch_size=batch_size, verbose=1)
     test_df = test_df[['click_id', 'pred']]
     print("writing...")
     test_df.to_csv(output_dir + '/test_pred.csv',index=False)
@@ -159,7 +164,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     del test_df
     
     print("Making OOF ...")
-    valid_df['pred'] = bst.predict(get_keras_data(valid_df), batch_size=batch_size, verbose=2)
+    valid_df['pred'] = model.predict(get_keras_data(valid_df), batch_size=batch_size, verbose=2)
     valid_df = valid_df[['is_attributed', 'pred']]
     print("writing...")
     valid_df.to_csv(output_dir + '/oof_pred.csv',index=False)
@@ -168,17 +173,9 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
 if __name__ == "__main__":
     output_dirs = [
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_1",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_2",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_3",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_4",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_5",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_6",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_7",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_8",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_9"
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/neuralNetwork/fold_1"
     ]
-    for i in range(9):
+    for i in range(1):
         print("Start training for fold #" + str(i+1))
         train_file = Chunk_files[i]
         valid_file = Valid_fname

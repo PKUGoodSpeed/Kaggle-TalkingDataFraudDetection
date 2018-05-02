@@ -241,7 +241,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
     start_time = time.time()
 
     params = {
-        'learning_rate': 0.15,
+        'learning_rate': 0.05,
         #'is_unbalance': 'true', # replaced with scale_pos_weight argument
         'num_leaves': 7,  # 2^max_depth - 1
         'max_depth': 3,  # -1 means no limit
@@ -251,7 +251,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
         'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
         'colsample_bytree': 0.9,  # Subsample ratio of columns when constructing each tree.
         'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
-        'scale_pos_weight':200 # because training data is extremely unbalanced 
+        'scale_pos_weight': 200 # because training data is extremely unbalanced 
     }
     (bst, best_iteration) = lgb_modelfit_nocv(params, 
                             train_df, 
@@ -262,7 +262,7 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
                             metrics='auc',
                             early_stopping_rounds=30, 
                             verbose_eval=True, 
-                            num_boost_round=1000, 
+                            num_boost_round=4000, 
                             categorical_features=categorical)
 
     print('[{}]: model training time'.format(time.time() - start_time))
@@ -288,19 +288,9 @@ def Shaocong(train_file, valid_file, test_file, output_dir):
 
 if __name__ == "__main__":
     output_dirs = [
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_1",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_2",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_3",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_4",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_5",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_6",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_7",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_8",
-        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_9"
+        "/home/zebo/git/myRep/Kaggle/Kaggle-TalkingDataFraudDetection/output/lightGBM_2/fold_1"
     ]
-    for i in range(9):
-        if i < 3:
-            continue
+    for i in range(1):
         print("Start training for fold #" + str(i+1))
         train_file = Chunk_files[i]
         valid_file = Valid_fname

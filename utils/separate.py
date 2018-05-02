@@ -17,7 +17,7 @@ def separate():
     print(df.shape)
     print(df.columns)
     length = len(df)
-    n_chunk = 9
+    n_chunk = 1
     chunk_size = int((length-Valid_size)/n_chunk)
     np.random.seed(17)
     perm = np.random.permutation(np.arange(0, length))
@@ -36,8 +36,8 @@ def separate():
         print(dfs[i].shape)
         print(dfs[i].head(2))
     print("Shape of validation set: ")
-    print(dfs[9].shape)
-    print(dfs[9].head(2))
+    print(dfs[1].shape)
+    print(dfs[1].head(2))
 
     del df
     gc.collect()
